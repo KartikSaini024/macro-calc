@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Macro & Calorie Calculator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #ECEEE8;
+    --grid-line: #C3CEDA;
+    --ink: #1C2B3A;
+    --ink-secondary: #55606B;
+    --ink-faint: #8A929C;
+    --accent: #B23A2F;
+    --accent-bg: #FBEDEA;
+    --panel: #16202B;
+    --panel-line: #2A3B4D;
+    --amber: #F2A93B;
+    --amber-dim: #C9863F;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: 'IBM Plex Sans', sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+  }
+  .mono { font-family: 'IBM Plex Mono', monospace; }
+  .page-wrap { max-width: 1040px; margin: 0 auto; padding: 40px 20px 64px; }
+  header { margin-bottom: 32px; border-bottom: 2px solid var(--ink); padding-bottom: 18px; }
+  .eyebrow { font-size: 12px; letter-spacing: 2px; color: var(--accent); font-weight: 600; margin-bottom: 6px; }
+  h1 { font-size: 32px; font-weight: 700; margin: 0; letter-spacing: -0.5px; }
+  header p { font-size: 15px; color: var(--ink-secondary); margin-top: 8px; max-width: 560px; line-height: 1.5; }
+
+  .worksheet-card {
+    display: grid;
+    grid-template-columns: minmax(280px, 380px) 1fr;
+    border: 2px solid var(--ink);
+    background-image: linear-gradient(var(--grid-line) 1px, transparent 1px), linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+    background-size: 22px 22px;
+    background-position: -1px -1px;
+  }
+  .worksheet-left {
+    padding: 24px;
+    border-right: 2px solid var(--ink);
+    background: rgba(236,238,232,0.85);
+  }
+  .worksheet-right {
+    padding: 24px;
+    background: rgba(236,238,232,0.4);
+  }
+
+  .section-label {
+    font-size: 11px; letter-spacing: 1.5px; font-weight: 600; color: var(--ink);
+    margin-bottom: 14px; padding-bottom: 6px; border-bottom: 1px solid #B7C0CA;
+  }
+  .field { margin-bottom: 16px; }
+  .field-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+  .field label { font-size: 13px; font-weight: 600; color: #39434D; }
+  .field-hint { font-size: 11.5px; color: var(--ink-faint); margin-top: 4px; line-height: 1.4; }
+
+  .input-wrap { position: relative; }
+  .input-wrap input {
+    width: 100%;
+    padding: 10px 44px 10px 12px;
+    font-size: 16px;
+    font-weight: 500;
+    font-family: 'IBM Plex Mono', monospace;
+    border: 1.5px solid var(--ink);
+    background: #F6F5F0;
+    color: var(--ink);
+  }
+  .input-wrap input:focus, .seg-btn:focus-visible, .unit-btn:focus-visible, .radio-row:focus-visible {
+    outline: 2px solid var(--accent); outline-offset: 2px;
+  }
+  .input-suffix {
+    position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+    font-size: 12px; color: var(--ink-faint); font-family: 'IBM Plex Mono', monospace;
+  }
+
+  .seg-group { display: flex; border: 1.5px solid var(--ink); }
+  .seg-btn {
+    flex: 1; padding: 9px 0; font-size: 13px; font-weight: 600; cursor: pointer;
+    border: none; background: #F6F5F0; color: var(--ink); transition: all .15s ease;
+  }
+  .seg-btn + .seg-btn { border-left: 1.5px solid var(--ink); }
+  .seg-btn.active { background: var(--ink); color: var(--paper); }
+
+  .unit-toggle { display: flex; gap: 2px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; }
+  .unit-btn {
+    padding: 2px 8px; border: 1px solid var(--ink); cursor: pointer;
+    background: transparent; color: var(--ink); font-weight: 600;
+  }
+  .unit-btn.active { background: var(--ink); color: var(--paper); }
+
+  .radio-row {
+    display: flex; justify-content: space-between; align-items: center; width: 100%;
+    text-align: left; padding: 9px 12px; cursor: pointer; margin-bottom: 6px;
+    border: 1.5px solid #C7CFD8; background: #F6F5F0; transition: all .15s ease;
+  }
+  .radio-row.active { border-color: var(--accent); background: var(--accent-bg); }
+  .radio-title { font-size: 13.5px; font-weight: 600; color: var(--ink); }
+  .radio-desc { font-size: 11px; color: var(--ink-faint); font-family: 'IBM Plex Mono', monospace; }
+  .radio-row.active .radio-desc { color: var(--accent); }
+
+  .footnote { margin-top: 24px; font-size: 12px; color: #7A8390; line-height: 1.5; }
+
+  .readout-panel { background: var(--panel); border: 2px solid var(--ink); padding: 0 0 4px; }
+  .perf-row { display: flex; justify-content: space-around; padding: 6px 8px 0; }
+  .perf-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--paper); }
+  .readout-body { padding: 18px 22px 8px; }
+  .goal-tag { font-size: 11px; color: #6F8A9E; letter-spacing: 1.5px; margin-bottom: 2px; font-family: 'IBM Plex Mono', monospace; }
+  .readout-row {
+    display: flex; justify-content: space-between; align-items: baseline;
+    padding: 8px 0; border-bottom: 1px dashed var(--panel-line);
+  }
+  .readout-row.big { padding: 10px 0 14px; border-bottom: 1px solid var(--panel-line); }
+  .readout-label { font-size: 12px; color: #8FA4B5; letter-spacing: 1px; font-family: 'IBM Plex Mono', monospace; }
+  .readout-row.big .readout-label { font-size: 13px; }
+  .readout-value-wrap { display: flex; align-items: baseline; gap: 8px; }
+  .readout-sub { font-size: 11px; color: #5F7488; font-family: 'IBM Plex Mono', monospace; }
+  .readout-value { font-size: 20px; font-weight: 600; color: var(--amber); font-family: 'IBM Plex Mono', monospace; }
+  .readout-row.big .readout-value { font-size: 34px; }
+  .readout-unit { font-size: 12px; color: var(--amber-dim); margin-left: 4px; }
+  .readout-row.big .readout-unit { font-size: 15px; }
+
+  .split-label { font-size: 11px; color: var(--ink-faint); margin-bottom: 6px; letter-spacing: 1px; font-family: 'IBM Plex Mono', monospace; }
+  .split-bar { display: flex; height: 14px; border: 1.5px solid var(--ink); overflow: hidden; }
+  .legend { display: flex; gap: 16px; margin-top: 8px; font-size: 12px; color: var(--ink-secondary); }
+  .legend-item { display: flex; align-items: center; gap: 5px; }
+  .legend-dot { width: 8px; height: 8px; display: inline-block; }
+
+  .stat-grid { margin-top: 18px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .stat-box { border: 1px solid #C7CFD8; padding: 8px 10px; background: #F6F5F0; }
+  .stat-label { font-size: 10px; color: var(--ink-faint); letter-spacing: 1px; font-family: 'IBM Plex Mono', monospace; }
+  .stat-value { font-size: 15px; font-weight: 600; color: var(--ink); margin-top: 2px; }
+
+  .disclaimer { font-size: 11.5px; color: var(--ink-faint); margin-top: 18px; line-height: 1.5; }
+  .empty-state { color: var(--ink-faint); font-size: 14px; padding: 40px; }
+
+  .action-bar { display: flex; gap: 8px; margin-top: 18px; }
+  .action-btn {
+    flex: 1; padding: 10px 0; font-size: 12.5px; font-weight: 600; letter-spacing: 0.5px;
+    cursor: pointer; border: 1.5px solid var(--ink); background: #F6F5F0; color: var(--ink);
+    font-family: 'IBM Plex Mono', monospace; transition: all .15s ease;
+  }
+  .action-btn.primary { background: var(--ink); color: var(--paper); }
+  .action-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  @media (max-width: 720px) {
+    .worksheet-card { grid-template-columns: 1fr; }
+    .worksheet-left { border-right: none; border-bottom: 2px solid var(--ink); }
+    .page-wrap { padding: 24px 14px 48px; }
+    h1 { font-size: 25px; }
+  }
+  @media (max-width: 400px) {
+    .worksheet-left, .worksheet-right { padding: 16px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+</style>
+</head>
+<body>
+  <div class="page-wrap">
+    <header>
+      <div class="eyebrow">NUTRITION WORKSHEET — REV. 02</div>
+      <h1>Macro & Calorie Calculator</h1>
+      <p>Built on Mifflin-St Jeor + activity multipliers, with protein, fat, fiber and water targets adjusted to your goal — not a flat multiplier applied to everyone.</p>
+    </header>
+
+    <div class="worksheet-card">
+      <div class="worksheet-left">
+        <div class="section-label">01 — About you</div>
+
+        <div class="field">
+          <div class="field-top"><label>Sex</label></div>
+          <div class="seg-group" id="sexGroup">
+            <button class="seg-btn active" data-value="male">Male</button>
+            <button class="seg-btn" data-value="female">Female</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="field-top"><label>Age</label></div>
+          <div class="input-wrap">
+            <input type="number" id="age" value="28" min="14" max="90" />
+            <span class="input-suffix">yrs</span>
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="field-top">
+            <label>Weight</label>
+            <div class="unit-toggle" id="weightUnitGroup">
+              <button class="unit-btn active" data-value="kg">kg</button>
+              <button class="unit-btn" data-value="lb">lb</button>
+            </div>
+          </div>
+          <div class="input-wrap">
+            <input type="number" id="weight" value="80" min="30" max="250" />
+            <span class="input-suffix" id="weightSuffix">kg</span>
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="field-top">
+            <label>Height</label>
+            <div class="unit-toggle" id="heightUnitGroup">
+              <button class="unit-btn active" data-value="cm">cm</button>
+              <button class="unit-btn" data-value="in">in</button>
+            </div>
+          </div>
+          <div class="input-wrap">
+            <input type="number" id="height" value="178" min="120" max="230" />
+            <span class="input-suffix" id="heightSuffix">cm</span>
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="field-top"><label>Body fat % (optional)</label></div>
+          <div class="input-wrap">
+            <input type="number" id="bodyFat" placeholder="—" min="4" max="60" />
+            <span class="input-suffix">%</span>
+          </div>
+          <div class="field-hint">Sharpens protein target using lean mass instead of total weight.</div>
+        </div>
+
+        <div class="section-label" style="margin-top:28px;">02 — Activity</div>
+        <div id="activityGroup"></div>
+
+        <div class="section-label" style="margin-top:28px;">03 — Goal</div>
+        <div id="goalGroup"></div>
+
+        <div class="footnote">Body recomp = small deficit + high protein + resistance training. It's the slow route to losing fat and building muscle at once — works best if you're new to lifting or returning after a break.</div>
+      </div>
+
+      <div class="worksheet-right" id="readoutContainer">
+        <div class="empty-state">Fill in age, weight, and height to generate your numbers.</div>
+      </div>
+    </div>
+  </div>
+
+<script>
+  const ACTIVITY = [
+    { id: "sedentary", label: "Sedentary", desc: "little/no exercise", mult: 1.2, waterBonus: 0 },
+    { id: "light", label: "Light", desc: "1–3 days/week", mult: 1.375, waterBonus: 0.25 },
+    { id: "moderate", label: "Moderate", desc: "3–5 days/week", mult: 1.55, waterBonus: 0.4 },
+    { id: "active", label: "Active", desc: "6–7 days/week", mult: 1.725, waterBonus: 0.55 },
+    { id: "veryactive", label: "Very active", desc: "2x/day or physical job", mult: 1.9, waterBonus: 0.7 },
+  ];
+  const GOALS = [
+    { id: "fatloss", label: "Fat loss", note: "~22% deficit", factor: 0.78 },
+    { id: "recomp", label: "Body recomp", note: "~7% deficit", factor: 0.93 },
+    { id: "maintenance", label: "Maintenance", note: "at TDEE", factor: 1.0 },
+    { id: "musclegain", label: "Muscle gain", note: "~12% surplus", factor: 1.12 },
+  ];
+
+  let state = {
+    sex: "male",
+    weightUnit: "kg",
+    heightUnit: "cm",
+    activityId: "moderate",
+    goalId: "recomp",
+  };
+
+  function round(n, d = 0) {
+    const f = Math.pow(10, d);
+    return Math.round(n * f) / f;
+  }
+
+  // Build activity + goal radio rows
+  function renderRadioGroup(containerId, items, selectedId, onSelect) {
+    const container = document.getElementById(containerId);
+    container.innerHTML = "";
+    items.forEach((item) => {
+      const row = document.createElement("button");
+      row.className = "radio-row" + (item.id === selectedId ? " active" : "");
+      row.innerHTML = `<span class="radio-title">${item.label}</span><span class="radio-desc">${item.desc || item.note}</span>`;
+      row.addEventListener("click", () => onSelect(item.id));
+      container.appendChild(row);
+    });
+  }
+
+  function renderActivity() {
+    renderRadioGroup("activityGroup", ACTIVITY, state.activityId, (id) => {
+      state.activityId = id;
+      renderActivity();
+      compute();
+    });
+  }
+  function renderGoal() {
+    renderRadioGroup("goalGroup", GOALS, state.goalId, (id) => {
+      state.goalId = id;
+      renderGoal();
+      compute();
+    });
+  }
+
+  function setupSeg(groupId, key, suffixId, onChangeExtra) {
+    const group = document.getElementById(groupId);
+    group.querySelectorAll("button").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        group.querySelectorAll("button").forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+        state[key] = btn.dataset.value;
+        if (suffixId) document.getElementById(suffixId).textContent = btn.dataset.value;
+        if (onChangeExtra) onChangeExtra();
+        compute();
+      });
+    });
+  }
+
+  setupSeg("sexGroup", "sex", null);
+  setupSeg("weightUnitGroup", "weightUnit", "weightSuffix");
+  setupSeg("heightUnitGroup", "heightUnit", "heightSuffix");
+
+  ["age", "weight", "height", "bodyFat"].forEach((id) => {
+    document.getElementById(id).addEventListener("input", compute);
+  });
+
+  function compute() {
+    const activity = ACTIVITY.find((a) => a.id === state.activityId);
+    const goal = GOALS.find((g) => g.id === state.goalId);
+
+    const ageVal = Number(document.getElementById("age").value);
+    const weightVal = document.getElementById("weight").value;
+    const heightVal = document.getElementById("height").value;
+    const bodyFatVal = document.getElementById("bodyFat").value;
+
+    const container = document.getElementById("readoutContainer");
+
+    if (!ageVal || weightVal === "" || heightVal === "") {
+      container.innerHTML = '<div class="empty-state">Fill in age, weight, and height to generate your numbers.</div>';
+      return;
+    }
+
+    const kg = state.weightUnit === "kg" ? Number(weightVal) : Number(weightVal) * 0.453592;
+    const cm = state.heightUnit === "cm" ? Number(heightVal) : Number(heightVal) * 2.54;
+
+    if (!kg || !cm) {
+      container.innerHTML = '<div class="empty-state">Fill in age, weight, and height to generate your numbers.</div>';
+      return;
+    }
+
+    const bmr = state.sex === "male"
+      ? 10 * kg + 6.25 * cm - 5 * ageVal + 5
+      : 10 * kg + 6.25 * cm - 5 * ageVal - 161;
+    const tdee = bmr * activity.mult;
+    const calories = tdee * goal.factor;
+
+    const bf = bodyFatVal === "" ? null : Number(bodyFatVal);
+    const lbm = bf ? kg * (1 - bf / 100) : null;
+
+    let proteinG;
+    const usedLBM = !!lbm;
+    if (lbm) {
+      const perKgLBM = (state.goalId === "fatloss" || state.goalId === "recomp") ? 2.6 : 2.2;
+      proteinG = lbm * perKgLBM;
+    } else {
+      const perKgBW = (state.goalId === "fatloss" || state.goalId === "recomp") ? 2.2 : 1.8;
+      proteinG = kg * perKgBW;
+    }
+
+    const fatFloor = kg * 0.5;
+    const fatFromPct = (calories * 0.3) / 9;
+    const fatG = Math.max(fatFromPct, fatFloor);
+
+    const fiberG = (calories / 1000) * 14;
+    const carbsG = Math.max((calories - proteinG * 4 - fatG * 9) / 4, 0);
+    const waterL = kg * 0.035 + activity.waterBonus;
+    const bmi = kg / Math.pow(cm / 100, 2);
+
+    const proteinCals = proteinG * 4;
+    const fatCals = fatG * 9;
+    const carbCals = carbsG * 4;
+    const totalCalsCheck = proteinCals + fatCals + carbCals;
+
+    const proteinPct = (proteinCals / totalCalsCheck) * 100;
+    const fatPct = (fatCals / totalCalsCheck) * 100;
+    const carbPct = (carbCals / totalCalsCheck) * 100;
+
+    lastContext = {
+      inputs: {
+        sex: state.sex,
+        age: ageVal,
+        weight: weightVal,
+        weightUnit: state.weightUnit,
+        height: heightVal,
+        heightUnit: state.heightUnit,
+        bodyFat: bodyFatVal,
+      },
+      r: {
+        calories, proteinG, fatG, fiberG, carbsG, waterL, bmr, tdee, bmi,
+        proteinPct, fatPct, carbPct, usedLBM
+      },
+      goal,
+      activity,
+    };
+
+    renderReadout(container, {
+      calories, proteinG, fatG, fiberG, carbsG, waterL, bmr, tdee, bmi,
+      proteinPct, fatPct, carbPct, usedLBM
+    }, goal);
+  }
+
+  let lastContext = null;
+
+  function buildSummaryText(ctx) {
+    const { inputs, r, goal, activity } = ctx;
+    const lines = [
+      "MACRO & CALORIE WORKSHEET",
+      `Generated: ${new Date().toLocaleString()}`,
+      "",
+      "ABOUT YOU",
+      `Sex: ${inputs.sex === "male" ? "Male" : "Female"}`,
+      `Age: ${inputs.age} yrs`,
+      `Weight: ${inputs.weight} ${inputs.weightUnit}`,
+      `Height: ${inputs.height} ${inputs.heightUnit}`,
+      `Body fat: ${inputs.bodyFat === "" ? "Not provided" : `${inputs.bodyFat}%`}`,
+      "",
+      `Activity: ${activity.label} (${activity.desc})`,
+      `Goal: ${goal.label} (${goal.note})`,
+      "",
+      "DAILY TARGETS",
+      `Calories: ${round(r.calories)} kcal`,
+      `Protein: ${round(r.proteinG)} g (${round(r.proteinPct)}%)`,
+      `Fat: ${round(r.fatG)} g (${round(r.fatPct)}%)`,
+      `Carbs: ${round(r.carbsG)} g (${round(r.carbPct)}%)`,
+      `Fiber: ${round(r.fiberG)} g`,
+      `Water: ${round(r.waterL, 1)} L`,
+      "",
+      "REFERENCE",
+      `BMR: ${round(r.bmr)} kcal`,
+      `TDEE (maintenance): ${round(r.tdee)} kcal`,
+      `BMI: ${round(r.bmi, 1)}`,
+      `Protein basis: ${r.usedLBM ? "Lean mass" : "Total weight"}`,
+      "",
+      "Estimates from population formulas — a starting point, not a prescription.",
+    ];
+    return lines.join("\n");
+  }
+
+  function buildSummaryJSON(ctx) {
+    const { inputs, r, goal, activity } = ctx;
+    return {
+      generatedAt: new Date().toISOString(),
+      inputs: {
+        sex: inputs.sex,
+        age: Number(inputs.age),
+        weight: Number(inputs.weight),
+        weightUnit: inputs.weightUnit,
+        height: Number(inputs.height),
+        heightUnit: inputs.heightUnit,
+        bodyFatPercent: inputs.bodyFat === "" ? null : Number(inputs.bodyFat),
+      },
+      activity: { id: activity.id, label: activity.label, description: activity.desc },
+      goal: { id: goal.id, label: goal.label, note: goal.note },
+      dailyTargets: {
+        calories_kcal: round(r.calories),
+        protein_g: round(r.proteinG),
+        protein_pct: round(r.proteinPct, 1),
+        fat_g: round(r.fatG),
+        fat_pct: round(r.fatPct, 1),
+        carbs_g: round(r.carbsG),
+        carbs_pct: round(r.carbPct, 1),
+        fiber_g: round(r.fiberG),
+        water_L: round(r.waterL, 1),
+      },
+      reference: {
+        bmr_kcal: round(r.bmr),
+        tdee_kcal: round(r.tdee),
+        bmi: round(r.bmi, 1),
+        proteinBasis: r.usedLBM ? "lean_mass" : "total_weight",
+      },
+    };
+  }
+
+  async function handleCopy() {
+    if (!lastContext) return;
+    const text = buildSummaryText(lastContext);
+    const btn = document.getElementById("copyBtn");
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch (e) {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+    }
+    const original = btn.textContent;
+    btn.textContent = "✓ Copied";
+    setTimeout(() => { btn.textContent = original; }, 1800);
+  }
+
+  function handleDownload() {
+    if (!lastContext) return;
+    const json = buildSummaryJSON(lastContext);
+    const blob = new Blob([JSON.stringify(json, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "macro-worksheet.json";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  function renderReadout(container, r, goal) {
+    const rows = [
+      { label: "CALORIES", value: round(r.calories), unit: "kcal", big: true },
+      { label: "PROTEIN", value: round(r.proteinG), unit: "g", sub: `${round(r.proteinPct)}%` },
+      { label: "FAT", value: round(r.fatG), unit: "g", sub: `${round(r.fatPct)}%` },
+      { label: "CARBS", value: round(r.carbsG), unit: "g", sub: `${round(r.carbPct)}%` },
+      { label: "FIBER", value: round(r.fiberG), unit: "g" },
+      { label: "WATER", value: round(r.waterL, 1), unit: "L" },
+    ];
+
+    const perfDots = Array.from({ length: 18 }).map(() => '<div class="perf-dot"></div>').join("");
+    const rowsHtml = rows.map((row) => `
+      <div class="readout-row ${row.big ? "big" : ""}">
+        <span class="readout-label">${row.label}</span>
+        <span class="readout-value-wrap">
+          ${row.sub ? `<span class="readout-sub">${row.sub}</span>` : ""}
+          <span class="readout-value">${row.value}<span class="readout-unit">${row.unit}</span></span>
+        </span>
+      </div>
+    `).join("");
+
+    container.innerHTML = `
+      <div class="readout-panel">
+        <div class="perf-row">${perfDots}</div>
+        <div class="readout-body">
+          <div class="goal-tag">GOAL: ${goal.label.toUpperCase()} · ${goal.note.toUpperCase()}</div>
+          ${rowsHtml}
+        </div>
+      </div>
+
+      <div style="margin-top:18px;">
+        <div class="split-label">CALORIE SPLIT</div>
+        <div class="split-bar">
+          <div style="width:${r.proteinPct}%; background:#B23A2F;" title="Protein"></div>
+          <div style="width:${r.fatPct}%; background:#E0A458;" title="Fat"></div>
+          <div style="width:${r.carbPct}%; background:#4C7A5E;" title="Carbs"></div>
+        </div>
+        <div class="legend">
+          <span class="legend-item"><span class="legend-dot" style="background:#B23A2F;"></span>Protein</span>
+          <span class="legend-item"><span class="legend-dot" style="background:#E0A458;"></span>Fat</span>
+          <span class="legend-item"><span class="legend-dot" style="background:#4C7A5E;"></span>Carbs</span>
+        </div>
+      </div>
+
+      <div class="stat-grid">
+        <div class="stat-box"><div class="stat-label">BMR</div><div class="stat-value">${round(r.bmr)} kcal</div></div>
+        <div class="stat-box"><div class="stat-label">TDEE (maintenance)</div><div class="stat-value">${round(r.tdee)} kcal</div></div>
+        <div class="stat-box"><div class="stat-label">BMI</div><div class="stat-value">${round(r.bmi, 1)}</div></div>
+        <div class="stat-box"><div class="stat-label">Protein basis</div><div class="stat-value">${r.usedLBM ? "Lean mass" : "Total weight"}</div></div>
+      </div>
+
+      <div class="action-bar">
+        <button class="action-btn" id="copyBtn" onclick="handleCopy()">Copy summary</button>
+        <button class="action-btn primary" onclick="handleDownload()">Download JSON</button>
+      </div>
+
+      <p class="disclaimer">Estimates from population formulas — treat as a starting point, not a prescription. Adjust every 2–3 weeks based on real-world results. Not medical advice; check with a doctor or dietitian if you have a health condition.</p>
+    `;
+  }
+
+  renderActivity();
+  renderGoal();
+  compute();
+</script>
+</body>
+</html>
